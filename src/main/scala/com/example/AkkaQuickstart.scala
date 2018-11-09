@@ -1,21 +1,19 @@
-//#full-example
 package com.example
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, Props }
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 
-//#greeter-companion
-//#greeter-messages
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model._
+import akka.stream.ActorMaterializer
+import scala.io.StdIn
+
 object Greeter {
-  //#greeter-messages
   def props(message: String, printerActor: ActorRef): Props = Props(new Greeter(message, printerActor))
-  //#greeter-messages
   final case class WhoToGreet(who: String)
   case object Greet
 }
-//#greeter-messages
-//#greeter-companion
 
-//#greeter-actor
 class Greeter(message: String, printerActor: ActorRef) extends Actor {
   import Greeter._
   import Printer._
@@ -26,25 +24,15 @@ class Greeter(message: String, printerActor: ActorRef) extends Actor {
     case WhoToGreet(who) =>
       greeting = message + ", " + who
     case Greet           =>
-      //#greeter-send-message
       printerActor ! Greeting(greeting)
-      //#greeter-send-message
   }
 }
-//#greeter-actor
 
-//#printer-companion
-//#printer-messages
 object Printer {
-  //#printer-messages
   def props: Props = Props[Printer]
-  //#printer-messages
   final case class Greeting(greeting: String)
 }
-//#printer-messages
-//#printer-companion
 
-//#printer-actor
 class Printer extends Actor with ActorLogging {
   import Printer._
 
@@ -53,41 +41,59 @@ class Printer extends Actor with ActorLogging {
       log.info("Greeting received (from " + sender() + "): " + greeting)
   }
 }
-//#printer-actor
 
-//#main-class
-object AkkaQuickstart extends App {
-  import Greeter._
 
-  // Create the 'helloAkka' actor system
-  val system: ActorSystem = ActorSystem("helloAkka")
+object AkkaQuickstart {
 
-  //#create-actors
-  // Create the printer actor
-  val printer: ActorRef = system.actorOf(Printer.props, "printerActor")
+  def main(args: Array[String]): Unit = {
+    import Greeter._
 
-  // Create the 'greeter' actors
-  val howdyGreeter: ActorRef =
-    system.actorOf(Greeter.props("Howdy", printer), "howdyGreeter")
-  val helloGreeter: ActorRef =
-    system.actorOf(Greeter.props("Hello", printer), "helloGreeter")
-  val goodDayGreeter: ActorRef =
-    system.actorOf(Greeter.props("Good day", printer), "goodDayGreeter")
-  //#create-actors
+    implicit val system: ActorSystem = ActorSystem("helloAkka")
 
-  //#main-send-messages
-  howdyGreeter ! WhoToGreet("Akka")
-  howdyGreeter ! Greet
+    val printer: ActorRef = system.actorOf(Printer.props, "printerActor")
+    val howdyGreeter: ActorRef = system.actorOf(Greeter.props("Howdy", printer), "howdyGreeter")
+    val helloGreeter: ActorRef = system.actorOf(Greeter.props("Hello", printer), "helloGreeter")
+    val goodDayGreeter: ActorRef = system.actorOf(Greeter.props("Good day", printer), "goodDayGreeter")
 
-  howdyGreeter ! WhoToGreet("Lightbend")
-  howdyGreeter ! Greet
+    howdyGreeter ! WhoToGreet("Akka")
+    howdyGreeter ! Greet
 
-  helloGreeter ! WhoToGreet("Scala")
-  helloGreeter ! Greet
+    howdyGreeter ! WhoToGreet("Lightbend")
+    howdyGreeter ! Greet
 
-  goodDayGreeter ! WhoToGreet("Play")
-  goodDayGreeter ! Greet
-  //#main-send-messages
+    helloGreeter ! WhoToGreet("Scala")
+    helloGreeter ! Greet
+
+    goodDayGreeter ! WhoToGreet("Play")
+    goodDayGreeter ! Greet
+
+    println("xd")
+
+    implicit val materializer = ActorMaterializer()
+    implicit val executionContext = system.dispatcher
+
+    val requestHandler: HttpRequest => HttpResponse = {
+      case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
+        HttpResponse(entity = HttpEntity(
+          ContentTypes.`text/html(UTF-8)`,
+          "<html><body>Hello world!</body></html>"))
+
+      case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
+        HttpResponse(entity = "PONG!")
+
+      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
+        sys.error("BOOM!")
+
+      case r: HttpRequest =>
+        r.discardEntityBytes() // important to drain incoming HTTP Entity stream
+        HttpResponse(404, entity = "Unknown resource!")
+    }
+
+    val bindingFuture = Http().bindAndHandleSync(requestHandler, "localhost", 8080)
+    println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+    StdIn.readLine() // let it run until user presses return
+    bindingFuture
+      .flatMap(_.unbind()) // trigger unbinding from the port
+      .onComplete(_ => system.terminate()) // and shutdown when done
+  }
 }
-//#main-class
-//#full-example
