@@ -1,2 +1,4 @@
 /sbt-dist/
 /project/
+/target/
+/.idea/
