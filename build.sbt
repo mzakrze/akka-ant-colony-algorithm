@@ -18,6 +18,7 @@ libraryDependencies ++= {
   Seq(
     "com.typesafe.akka" %% "akka-http" % "10.1.5",
     "com.typesafe.akka" %% "akka-stream" % "2.5.12",
+    //"com.typesafe.akka" %% "akka-http-spray-json" % "10.1.5",
     "ch.qos.logback"    %  "logback-classic" % "1.1.2",
     "org.json4s"        %% "json4s-native"   % Json4sVersion,
     "org.json4s"        %% "json4s-ext"      % Json4sVersion

@@ -1,3 +1,5 @@
+
+
 var COLOR = {
     ANT: {r: 0, g: 0, b: 0},
     ANTHILL: {r: 0, g: 255, b: 0},
@@ -22,25 +24,27 @@ run()
 
 function doRefresh() {
 
-    var data = apiMock();
+    apiMock().then(function (data) {
+        console.log(JSON.stringify(data))
 
-    for(var i = 0; i < CANVAS_HEIGHT * CANVAS_WIDTH * 4; i++) {
-        canvasData.data[i] = 0;
-    }
+        for(var i = 0; i < CANVAS_HEIGHT * CANVAS_WIDTH * 4; i++) {
+            canvasData.data[i] = 0;
+        }
 
-    for(let ant of data.ants) {
-        drawPixel(ant.x, ant.y, COLOR.ANT, 255);
-    }
+        for(let ant of data.ants) {
+            drawPixel(ant.x, ant.y, COLOR.ANT, 255);
+        }
 
-    for(let p of data.pheromones) {
-        drawPixel(p.x, p.y, COLOR.PHEROMONE, 255);
-    }
+        for(let p of data.pheromones) {
+            drawPixel(p.x, p.y, COLOR.PHEROMONE, 255);
+        }
 
-    for(let f of data.food) {
-        drawPixel(f.x, f.y, COLOR.FOOD, 255);
-    }
+        for(let f of data.food) {
+            drawPixel(f.x, f.y, COLOR.FOOD, 255);
+        }
 
-    ctx.putImageData(canvasData, 0, 0);
+        ctx.putImageData(canvasData, 0, 0);
+    })
 
     function drawPixel (x, y, c, alpha) {
         var index = (x + y * CANVAS_WIDTH) * 4;
@@ -54,6 +58,52 @@ function doRefresh() {
 
 
 function apiMock() {
+
+    // FIXME - to nie działa, bo CORS
+    // natomiast wpisywane bezpośrednio w przeglądarkę działa
+
+//   $.ajax({
+//        url: 'http://localhost:8080/api',
+//        type: "GET",
+//        dataType: "json",
+//        crossDomain: true,
+//        "headers": {
+//              "accept": "application/json",
+//              "Access-Control-Allow-Origin":"*"
+//          },
+//        success: function (response) {
+//
+//          if(response.data.length == 0){
+//              // EMPTY
+//             }else{
+//              var obj =jQuery.parseJSON(response.data);
+//                console.log(obj);
+//             }
+//         }
+//   });
+
+   return fetch('http://localhost:8080/api',
+        {
+            method: "GET",
+            headers: { "Content-Type": "application/json; charset=utf-8"}
+        })
+        .then(function(response) {
+            console.log('response.status = ', response.status)
+            debugger;
+            var a = response.responseText
+            return response.json().then(function(text) {
+                return text ? JSON.parse(text) : {}
+              })
+        });
+
+
+
+//        .then(function(data) {
+//            console.log('data:', data)
+//            return data
+//        })
+
+
 
     var ants = [
         {x: 150, y: 150},
