@@ -24,7 +24,7 @@ run()
 
 function doRefresh() {
 
-    apiMock().then(function (data) {
+    fetchApi().then(function (data) {
         console.log(JSON.stringify(data))
 
         for(var i = 0; i < CANVAS_HEIGHT * CANVAS_WIDTH * 4; i++) {
@@ -57,72 +57,9 @@ function doRefresh() {
 }
 
 
-function apiMock() {
-
-    // FIXME - to nie działa, bo CORS
-    // natomiast wpisywane bezpośrednio w przeglądarkę działa
-
-//   $.ajax({
-//        url: 'http://localhost:8080/api',
-//        type: "GET",
-//        dataType: "json",
-//        crossDomain: true,
-//        "headers": {
-//              "accept": "application/json",
-//              "Access-Control-Allow-Origin":"*"
-//          },
-//        success: function (response) {
-//
-//          if(response.data.length == 0){
-//              // EMPTY
-//             }else{
-//              var obj =jQuery.parseJSON(response.data);
-//                console.log(obj);
-//             }
-//         }
-//   });
-
-   return fetch('http://localhost:8080/api',
-        {
-            method: "GET",
-            headers: { "Content-Type": "application/json; charset=utf-8"}
-        })
+function fetchApi() {
+   return fetch('http://localhost:8080/api')
         .then(function(response) {
-            console.log('response.status = ', response.status)
-            debugger;
-            var a = response.responseText
-            return response.json().then(function(text) {
-                return text ? JSON.parse(text) : {}
-              })
+            return response.json()
         });
-
-
-
-//        .then(function(data) {
-//            console.log('data:', data)
-//            return data
-//        })
-
-
-
-    var ants = [
-        {x: 150, y: 150},
-        {x: 150, y: 150},
-        {x: 200, y: 200},
-    ];
-
-    var pheromones = [
-        {x: 50, y: 50},
-        {x: 50, y: 51},
-        {x: 50, y: 52},
-        {x: 50, y: 53},
-        {x: 50, y: 54},
-    ]
-
-    return {
-        ants: ants,
-        anthill: {x: 100, y: 100},
-        food: [],
-        pheromones: pheromones
-    }
 }
